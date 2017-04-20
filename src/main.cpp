@@ -155,36 +155,19 @@ void postProcess () {
 	}
 }
 
-void perlinNoise () {
-	heightMapBuilder.SetSourceModule (myModule);
-	heightMapBuilder.SetDestNoiseMap (heightMap);
-	heightMapBuilder.SetDestSize (terrain_width, terrain_height);
-	heightMapBuilder.SetBounds (0.0, 4.0, 1.0, 5.0);
-	heightMapBuilder.Build ();
-
+void perlinNoise (double time) {
 	int k = 0;
-	for (int i = 0; i < terrain_width; i++) {
-		for (int j = 0; j < terrain_height; j++) {
-			//float raw = heightMap.GetValue ((i + (int)elapsed.asSeconds()) % terrain_width, (j + (int)elapsed.asSeconds ()) % terrain_height);
-			float raw = heightMap.GetValue (i, j);
+	for (double i = 0; i < terrain_width; i++) {
+		for (double j = 0; j < terrain_height; j++) {
+			double raw = myModule.GetValue (i * 0.1f, j * 0.1f, time);
 			terrain[k] = mapping (raw);
-			//std::cout << terrain[k] << " ";
+			std::cout << terrain[k] << " ";
 			k++;
 		}
-		//std::cout << std::endl;
+		std::cout << std::endl;
 	}
+
 	postProcess ();
-	postProcess ();
-	//for (double i = 0; i < terrain_width; i++) {
-	//	for (double j = 0; j < terrain_height; j++) {
-	//		double raw = myModule.GetValue (i, j, elapsed.asMilliseconds () % 48 + 0.f);
-	//		terrain[k] = mapping (raw);
-	//		//std::cout << terrain[k] << " "; k++;
-	//		std::cout << raw << " ";
-	//		k++;
-	//	}
-	//	std::cout << std::endl;
-	//}
 }
 
 int main () {
@@ -201,8 +184,8 @@ int main () {
 	// draw the background of text field
 	sf::RectangleShape textField;
 	textField.setFillColor (sf::Color::Black);
-	textField.setSize (sf::Vector2f (gameWidth + 0.f, 30.f));
-	textField.setPosition (0, gameHeight - 30);
+	textField.setSize (sf::Vector2f (gameWidth + 0.f, 60.f));
+	textField.setPosition (0, gameHeight - 60);
 
 	// display the text
 	sf::Text seedText;
@@ -210,12 +193,20 @@ int main () {
 	seedText.setCharacterSize (20);
 	seedText.setFillColor (sf::Color::Green);
 	std::string seedStr = std::to_string (myModule.GetSeed ());
-	seedText.setString ("Set Perlin noise seed as: " + seedStr);
+	seedText.setString ("Seed (Use UP/DOWN key to change): " + seedStr);
 	seedText.setPosition (20, gameHeight - 30);
 
+	sf::Text timeText;
+	timeText.setFont (fontHNL);
+	timeText.setCharacterSize (20);
+	timeText.setFillColor (sf::Color::Green);
+	timeText.setString ("Use Left/Right key to animate. ");
+	timeText.setPosition (20, gameHeight - 50);
+
+	double animate = 0.5f;
 	// create the tilemap from the level definition
 	TileMap map;
-	perlinNoise ();
+	perlinNoise (animate);
 	assert (map.load ("static/image/tileset.gif", sf::Vector2u (16, 16), terrain,
 		terrain_width, terrain_height));
 	
@@ -227,21 +218,30 @@ int main () {
 			if ((event.type == sf::Event::Closed) ||
 				((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape))) {
 				window.close ();
-			} 
-			else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Up)) {
+			} else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Up)) {
 				myModule.SetSeed (myModule.GetSeed () + 1);
-				perlinNoise ();
+				perlinNoise (animate);
 				assert (map.load ("static/image/tileset.gif", sf::Vector2u (16, 16), terrain,
 					terrain_width, terrain_height));
 				seedStr = std::to_string (myModule.GetSeed ());
 				seedText.setString ("Seed (Use UP/DOWN key to change): " + seedStr);
 			} else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Down)) {
 				myModule.SetSeed (myModule.GetSeed () - 1);
-				perlinNoise ();
+				perlinNoise (animate);
 				assert (map.load ("static/image/tileset.gif", sf::Vector2u (16, 16), terrain,
 					terrain_width, terrain_height));
 				seedStr = std::to_string (myModule.GetSeed ());
 				seedText.setString ("Seed (Use UP/DOWN key to change): " + seedStr);
+			} else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Left)) {
+				animate -= 0.025f;
+				perlinNoise (animate);
+				assert (map.load ("static/image/tileset.gif", sf::Vector2u (16, 16), terrain,
+					terrain_width, terrain_height));
+			} else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Right)) {
+				animate += 0.025f;
+				perlinNoise (animate);
+				assert (map.load ("static/image/tileset.gif", sf::Vector2u (16, 16), terrain,
+					terrain_width, terrain_height));
 			}
 		}
 
@@ -249,6 +249,7 @@ int main () {
 		window.clear ();
 		window.draw (map);
 		window.draw (textField);
+		window.draw (timeText);
 		window.draw (seedText);
 		window.display ();
 	}
